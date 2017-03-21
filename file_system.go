@@ -268,28 +268,31 @@ func (fs *FileSystem) open(name string) (*FileData, error) {
 	fileData, ok := fs.data[name]
 	fs.RUnlock()
 
-	if !ok {
-		fileData, err := fs.loadFileData(name)
-		if err != nil {
-			return nil, err
-		}
-		fs.data[name] = fileData
+	if ok {
+		return fileData, nil
 	}
 
+	fileData, err := fs.loadFileData(name)
+	if err != nil {
+		return nil, err
+	}
+	fs.data[name] = fileData
 	return fileData, nil
 }
 
 func (fs *FileSystem) lockfreeOpen(name string) (*FileData, error) {
 	name = normalizePath(name)
 	fileData, ok := fs.data[name]
-	if !ok {
-		fileData, err := fs.loadFileData(name)
-		if err != nil {
-			return nil, err
-		}
-		fs.data[name] = fileData
+
+	if ok {
+		return fileData, nil
 	}
 
+	fileData, err := fs.loadFileData(name)
+	if err != nil {
+		return nil, err
+	}
+	fs.data[name] = fileData
 	return fileData, nil
 }
 
