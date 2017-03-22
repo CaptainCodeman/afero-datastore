@@ -43,11 +43,11 @@ To avoid too many datastore writes, the datastore entities are only written on c
 
 ## Testing
 
-Test standalone version:
+To test the standalone version, first download a `service-account.json` file for your project and set the project name in the `file_system_standalone_test.go` file, then run:
 
     go test -v
 
-Test appengine version:
+To test AppEngine standard version, install the AppEngine SDK for Go and run:
 
     goapp test -v
 
@@ -61,5 +61,6 @@ Datastore is eventually consistent so some operations may not be immediately vis
 
 ## Enhancements
 
+Flags for test configuration (e.g. project name)
 Improve usefulness of logging
 Add storage-level compression (i.e. transparent to the caller)
