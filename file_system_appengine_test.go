@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	fs = NewFileSystem(ctx, "", Standard)
+	fs = NewFileSystem(ctx, "", "", Standard)
 	defer func() {
 		fs.RemoveAll("/tmp")
 		done()

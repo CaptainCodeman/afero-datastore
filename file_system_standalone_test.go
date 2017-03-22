@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	fs = NewFileSystem(client, "")
+	fs = NewFileSystem(client, "", "")
 	defer func() {
 		fs.RemoveAll("/tmp")
 	}()

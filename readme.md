@@ -61,6 +61,7 @@ Datastore is eventually consistent so some operations may not be immediately vis
 
 ## Enhancements
 
-Flags for test configuration (e.g. project name)
-Improve usefulness of logging
-Add storage-level compression (i.e. transparent to the caller)
+* Flags for test configuration (e.g. project name)
+* Fully clean-up tests and use more unique names for standalone namespace + entity to avoid conflicts
+* Improve usefulness of logging
+* Add storage-level compression (i.e. transparent to the caller)
