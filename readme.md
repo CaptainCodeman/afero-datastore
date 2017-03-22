@@ -8,6 +8,31 @@ Allows the datastore to be treated as a filesystem by Go code which would, for i
 
 Build flags are used to allow it to work with the `google.golang.org/appengine/datastore` package (for AppEngine Standard) or remotely via the newer `cloud.google.com/go/datastore` package (for AppEngine Flex, GCE or standalone.
 
+## Usage
+
+Depending on whether you are using AppEngine Standard or Flex / GCS or some other platform, the constructor will vary (this is due to there being different datastore clients for the different platforms).
+
+### AppEngine Standard
+
+Call `NewFileSystem` passing a `context.Context` sourced from the request (`appengine.NewContext(r)`) the namespace and kind to use for datastore entities and either `dfs.Standard` to use raw datastore calls or `dfs.Memcache` to use memcache. Note that due to AppEngine Standard restrictions, a filedsystem instance is only valid while associated with it's request.
+
+```go
+fs := dfs.NewFileSystem(ctx, "captaincodeman", "drafts", dfs.Memcache)
+```
+
+### AppEngine Flex / GCE
+
+Create a datastore client with the `google.golang.org/appengine/datastore` package and pass to the `NewFileSystem` method along with a `context.Context` and the namespace and kind to use. Example using the default namespace and
+file entities stored as `file` in the datastore:
+
+```go
+ctx := context.Background()
+serviceAccount := option.WithServiceAccountFile("service-account.json")
+client, _ := datastore.NewClient(ctx, "app-name", serviceAccount)
+
+fs = NewFileSystem(client, "captaincodeman", "drafts")
+```
+
 ## Notes
 
 The namespacing feature of datastore can be used in a similar way to having separate volumes.
@@ -28,11 +53,13 @@ Test appengine version:
 
 ## Known Issues
 
+Afero isn't (yet) compatible with AppEngine Standard due to direct import of "syscall" but I have a fork that hides these behind build flags so that it can be used on the platform.
+
 Some of the operations currently don't keep the session cache of files updated (but the tests pass and publishing via Hugo runs fine). Also, closed files should be removed to avoid excessive memory use (more critical if running on the low-memory AppEngine frontend instances).
 
-Datastore is eventually consistent so some operations may not be immediately visible.
+Datastore is eventually consistent so some operations may not be immediately visible. Files are written on Close, so Directory operations will not always show newly created files (it typically works fine with Hugo).
 
 ## Enhancements
 
-Allow setting the datastore 'kind' to use - effectively different volumes within a namespace.
-Add support for memcache - see [nds](https://github.com/qedus/nds) package
+Improve usefulness of logging
+Add storage-level compression (i.e. transparent to the caller)

@@ -22,11 +22,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	defer done()
 
-	fs = NewFileSystem(ctx, "")
+	fs = NewFileSystem(ctx, "", Standard)
 	defer func() {
 		fs.RemoveAll("/tmp")
+		done()
 	}()
 
 	os.Exit(m.Run())

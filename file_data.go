@@ -18,6 +18,9 @@ type (
 		// identity of this entity
 		name string
 
+		// whether the data is dirty
+		dirty bool
+
 		// Mode is the filemode / permission flags
 		Mode int64 `datastore:"mode,noindex"`
 
@@ -49,6 +52,7 @@ type (
 func CreateFile(name string) *FileData {
 	return &FileData{
 		name:    name,
+		dirty:   true,
 		Parent:  filepath.Dir(name),
 		Mode:    int64(os.ModeTemporary),
 		ModTime: time.Now(),

@@ -21,31 +21,38 @@ type (
 		ctx       context.Context
 		client    *datastore.Client
 		namespace string
+		kind      string
 		data      map[string]*FileData
 	}
 )
 
 // NewFileSystem creates a new appengine datastore backed filesystem
-func NewFileSystem(client *datastore.Client, namespace string) *FileSystem {
+func NewFileSystem(client *datastore.Client, namespace, kind string) *FileSystem {
 	logger.Println("create standalone datastore filesystem", namespace)
+	
+	if kind == "" {
+		kind = "file"
+	}
+
 	return &FileSystem{
 		ctx:       context.Background(),
 		client:    client,
 		namespace: namespace,
+		kind:      kind,
 		data:      make(map[string]*FileData),
 	}
 }
 
 func (fs *FileSystem) makeKey(name string) *datastore.Key {
-	key := datastore.NameKey(fileKind, name, nil)
+	key := datastore.NameKey(fs.kind, name, nil)
 	key.Namespace = fs.namespace
 	return key
 }
 
 func (fs *FileSystem) loadFileData(name string) (*FileData, error) {
 	key := fs.makeKey(name)
-	fileData := new(FileData)
-	if err := fs.client.Get(fs.ctx, key, fileData); err != nil {
+	var fileData FileData
+	if err := fs.client.Get(fs.ctx, key, &fileData); err != nil {
 		if err == datastore.ErrNoSuchEntity {
 			return nil, ErrFileNotFound
 		}
@@ -53,7 +60,7 @@ func (fs *FileSystem) loadFileData(name string) (*FileData, error) {
 	}
 
 	fileData.name = name
-	return fileData, nil
+	return &fileData, nil
 }
 
 func (fs *FileSystem) saveFileData(fileData *FileData) error {
@@ -81,7 +88,7 @@ func (fs *FileSystem) deleteFileData(name string) error {
 func (fs *FileSystem) readDir(name string, offset, limit int) ([]os.FileInfo, error) {
 	files := []os.FileInfo{}
 
-	q := datastore.NewQuery("file")
+	q := datastore.NewQuery(fs.kind)
 	q = q.Filter("parent =", name)
 	q = q.Order("__key__")
 	q = q.Namespace(fs.namespace)
@@ -144,7 +151,7 @@ func (fs *FileSystem) rename(oldname, newname string) error {
 }
 
 func (fs *FileSystem) removeAllDescendents(path string) error {
-	q := datastore.NewQuery("file")
+	q := datastore.NewQuery(fs.kind)
 	q = q.Filter("parent >=", path)
 	q = q.Filter("parent <", path+"\x7F")
 	q = q.Namespace(fs.namespace)

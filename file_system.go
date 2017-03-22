@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	fileKind          = "file"
 	filePathSeparator = string(filepath.Separator)
 )
 
@@ -32,10 +31,6 @@ func (fs *FileSystem) Create(name string) (afero.File, error) {
 	fileData := CreateFile(name)
 	fs.data[name] = fileData
 	fs.Unlock()
-
-	if err := fs.saveFileData(fileData); err != nil {
-		return nil, &os.PathError{Op: "create", Path: name, Err: err}
-	}
 
 	return NewFileHandle(fs, fileData), nil
 }
@@ -79,18 +74,20 @@ func (fs *FileSystem) MkdirAll(path string, perm os.FileMode) error {
 	defer fs.Unlock()
 
 	// walk the tree up to the root until we reach a directory
-	create := make([]string, 0, 8)
+	create := make([]string, 0)
 	var err error
 	var dir *FileData
 	curr := clean
 	for len(curr) > 1 {
 		curr = filepath.Dir(curr)
-		if dir, err = fs.lockfreeOpen(curr); err == nil {
+		dir, err = fs.lockfreeOpen(curr)
+		if err == nil {
 			break
 		}
 		if !os.IsNotExist(err) {
 			return err
 		}
+
 		logger.Println("create", curr)
 		create = append(create, curr)
 	}

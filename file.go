@@ -70,11 +70,15 @@ func (f *File) Close() error {
 	defer f.fileData.Unlock()
 
 	f.closed = true
-	f.fileData.ModTime = time.Now()
-	f.fileData.Size = int64(len(f.fileData.Data))
 
-	// TODO: write on save every time? store dirty flag on fileData? last reference?
-	return f.fs.saveFileData(f.fileData)
+	if f.fileData.dirty {
+		f.fileData.ModTime = time.Now()
+		f.fileData.Size = int64(len(f.fileData.Data))
+		f.fileData.dirty = false
+		return f.fs.saveFileData(f.fileData)
+	}
+
+	return nil
 }
 
 // Name returns the filename
@@ -92,6 +96,7 @@ func (f *File) Sync() error {
 
 func (f *File) Readdir(count int) ([]os.FileInfo, error) {
 	logger.Println("Readdir", count, f.readDirCount)
+
 	files, err := f.fs.readDir(f.fileData.name, int(f.readDirCount), count)
 	if err != nil {
 		return nil, err
@@ -167,6 +172,7 @@ func (f *File) Truncate(size int64) error {
 		f.fileData.Data = f.fileData.Data[0:size]
 	}
 	f.fileData.ModTime = time.Now()
+	f.fileData.dirty = true
 	return nil
 }
 
@@ -208,8 +214,9 @@ func (f *File) Write(data []byte) (int, error) {
 		f.fileData.Data = append(f.fileData.Data[:cur], data...)
 		f.fileData.Data = append(f.fileData.Data, tail...)
 	}
-	f.fileData.ModTime = time.Now().UTC()
 	atomic.StoreInt64(&f.at, int64(len(f.fileData.Data)))
+	f.fileData.ModTime = time.Now()
+	f.fileData.dirty = true
 
 	return n, nil
 }
